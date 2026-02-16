@@ -3,6 +3,7 @@ export type StudentType = 'JOB_SEEKER' | 'PAID_INTERN' | 'UNPAID_INTERN' | 'STUD
 export type ActivityStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Student {
+  status: string;
   id: string;
   name: string;
   phoneNumber: string;

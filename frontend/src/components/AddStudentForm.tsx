@@ -37,15 +37,17 @@ export function AddStudentForm({
     governmentIdProof: "",
   });
 
+  /* ================= HANDLE CHANGE ================= */
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  /* ================= HANDLE SUBMIT ================= */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    /* ===== REQUIRED FIELD VALIDATION ===== */
+    /* ===== REQUIRED VALIDATION ===== */
     if (!formData.name.trim()) return setError("Name is required");
     if (!formData.phoneNumber) return setError("Phone number is required");
     if (!formData.type) return setError("Type is required");
@@ -56,6 +58,10 @@ export function AddStudentForm({
     if (!formData.address.trim()) return setError("Address is required");
     if (!formData.governmentIdProof.trim())
       return setError("Government ID Proof is required");
+    if (formData.phoneNumber.length !== 12) {
+  return setError("Phone number must be exactly 12 digits");
+}
+
 
     /* ===== PHONE VALIDATION ===== */
     if (!/^\d{12}$/.test(formData.phoneNumber)) {
@@ -91,7 +97,7 @@ export function AddStudentForm({
       return setError("Amounts cannot be negative");
     }
 
-    /* ===== INACTIVE LOGIC ===== */
+    /* ===== INACTIVE VALIDATION ===== */
     if (
       formData.activityStatus === "INACTIVE" &&
       !formData.inactivityReason.trim()
@@ -114,7 +120,7 @@ export function AddStudentForm({
           : formData.inactivityReason,
     };
 
-    onSubmit(payload); // ✅ THIS WAS MISSING
+    onSubmit(payload);
   };
 
   return (
@@ -122,34 +128,119 @@ export function AddStudentForm({
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       <div className="grid grid-cols-2 gap-4">
-        <Input placeholder="Name" value={formData.name} onChange={(e) => handleChange("name", e.target.value)} />
-        <Input placeholder="Phone (12 digits)" value={formData.phoneNumber} maxLength={12} onChange={(e) => handleChange("phoneNumber", e.target.value.replace(/\D/g, ""))} />
-        <Input placeholder="Email" value={formData.email} onChange={(e) => handleChange("email", e.target.value)} />
 
-        <select value={formData.type} onChange={(e) => handleChange("type", e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
+        <Input
+          placeholder="Name"
+          value={formData.name}
+          onChange={(e) => handleChange("name", e.target.value)}
+        />
+
+        {/* 🔥 PHONE FIELD (STRICT 12 DIGITS) */}
+        <Input
+  placeholder="Phone (12 digits)"
+  value={formData.phoneNumber}
+  maxLength={12}
+  onChange={(e) => {
+    const value = e.target.value;
+
+    // Allow only digits
+    if (!/^\d*$/.test(value)) return;
+
+    // Prevent typing more than 12
+    if (value.length > 12) return;
+
+    handleChange("phoneNumber", value);
+  }}
+  onPaste={(e) => {
+    const pasted = e.clipboardData.getData("Text");
+
+    // Prevent paste if not exactly digits or > 12
+    if (!/^\d{1,12}$/.test(pasted)) {
+      e.preventDefault();
+    }
+  }}
+/>
+
+
+        <Input
+          placeholder="Email"
+          value={formData.email}
+          onChange={(e) => handleChange("email", e.target.value)}
+        />
+
+        <select
+          value={formData.type}
+          onChange={(e) => handleChange("type", e.target.value)}
+          className="w-full border rounded px-3 py-2 text-sm"
+        >
           <option value="">Select Type</option>
           <option value="STUDENT">STUDENT</option>
           <option value="EMPLOYEE">EMPLOYEE</option>
           <option value="MENTOR">TRAINER / MENTOR</option>
         </select>
 
-        <Input type="number" placeholder="Amount Paid" value={formData.amountPaid} onChange={(e) => handleChange("amountPaid", e.target.value)} />
-        <Input type="number" placeholder="Due Amount" value={formData.dueAmount} onChange={(e) => handleChange("dueAmount", e.target.value)} />
-        <Input type="number" placeholder="Discount" value={formData.discount} onChange={(e) => handleChange("discount", e.target.value)} />
-        <Input type="number" placeholder="Incentives Paid" value={formData.incentivesPaid} onChange={(e) => handleChange("incentivesPaid", e.target.value)} />
+        <Input type="number" placeholder="Amount Paid"
+          value={formData.amountPaid}
+          onChange={(e) => handleChange("amountPaid", e.target.value)}
+        />
 
-        <Input type="date" value={formData.dateOfJoining} onChange={(e) => handleChange("dateOfJoining", e.target.value)} />
-        <Input type="date" value={formData.inactiveOn} onChange={(e) => handleChange("inactiveOn", e.target.value)} />
+        <Input type="number" placeholder="Due Amount"
+          value={formData.dueAmount}
+          onChange={(e) => handleChange("dueAmount", e.target.value)}
+        />
 
-        <Input placeholder="Country" value={formData.country} onChange={(e) => handleChange("country", e.target.value)} />
-        <Input placeholder="State" value={formData.state} onChange={(e) => handleChange("state", e.target.value)} />
+        <Input type="number" placeholder="Discount"
+          value={formData.discount}
+          onChange={(e) => handleChange("discount", e.target.value)}
+        />
 
-        <Input className="col-span-2" placeholder="Address" value={formData.address} onChange={(e) => handleChange("address", e.target.value)} />
-        <Input className="col-span-2" placeholder="Government ID Proof" value={formData.governmentIdProof} onChange={(e) => handleChange("governmentIdProof", e.target.value)} />
+        <Input type="number" placeholder="Incentives Paid"
+          value={formData.incentivesPaid}
+          onChange={(e) => handleChange("incentivesPaid", e.target.value)}
+        />
+
+        <Input type="date"
+          value={formData.dateOfJoining}
+          onChange={(e) => handleChange("dateOfJoining", e.target.value)}
+        />
+
+        <Input type="date"
+          value={formData.inactiveOn}
+          onChange={(e) => handleChange("inactiveOn", e.target.value)}
+        />
+
+        <Input placeholder="Country"
+          value={formData.country}
+          onChange={(e) => handleChange("country", e.target.value)}
+        />
+
+        <Input placeholder="State"
+          value={formData.state}
+          onChange={(e) => handleChange("state", e.target.value)}
+        />
+
+        <Input
+          className="col-span-2"
+          placeholder="Address"
+          value={formData.address}
+          onChange={(e) => handleChange("address", e.target.value)}
+        />
+
+        <Input
+          className="col-span-2"
+          placeholder="Government ID Proof"
+          value={formData.governmentIdProof}
+          onChange={(e) => handleChange("governmentIdProof", e.target.value)}
+        />
+
 
         <div className="col-span-2">
           <label className="text-sm font-medium">Activity Status</label>
-          <select value={formData.activityStatus} onChange={(e) => handleChange("activityStatus", e.target.value)} className="w-full border rounded px-3 py-2 text-sm">
+          <select
+            value={formData.activityStatus}
+            onChange={(e) => handleChange("activityStatus", e.target.value)}
+            className="w-full border rounded px-3 py-2 text-sm"
+          >
             <option value="ACTIVE">ACTIVE</option>
             <option value="INACTIVE">INACTIVE</option>
           </select>
@@ -157,15 +248,26 @@ export function AddStudentForm({
 
         {formData.activityStatus === "INACTIVE" && (
           <div className="col-span-2">
-            <Input placeholder="Inactivity Reason" value={formData.inactivityReason} onChange={(e) => handleChange("inactivityReason", e.target.value)} />
+            <Input
+              placeholder="Inactivity Reason"
+              value={formData.inactivityReason}
+              onChange={(e) =>
+                handleChange("inactivityReason", e.target.value)
+              }
+            />
           </div>
         )}
       </div>
 
       <div className="flex justify-end gap-3">
-        <Button type="button" onClick={onCancel} className="bg-red-600 text-white">
+        <Button
+          type="button"
+          onClick={onCancel}
+          className="bg-red-600 text-white"
+        >
           Cancel
         </Button>
+
         <Button type="submit">Add Student</Button>
       </div>
     </form>

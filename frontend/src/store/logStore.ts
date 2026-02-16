@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export interface Log {
+  timestamp: string | number | Date;
   id?: number;
   adminName: string;
   adminEmail?: string;
@@ -24,43 +25,58 @@ export const useLogStore = create<LogStore>((set) => ({
 
   setLogs: (logs) => set({ logs }),
 
-  // FETCH logs (latest first)
+  // FETCH logs
   fetchLogs: async () => {
-    const res = await fetch("http://localhost:5000/logs");
-    const data: Log[] = await res.json();
+    try {
+      const res = await fetch("http://localhost:5000/logs");
+      const data: Log[] = await res.json();
 
-    set({
-      logs: data.sort(
-        (a, b) =>
-          new Date(b.createdAt || "").getTime() -
-          new Date(a.createdAt || "").getTime()
-      ),
-    });
+      set({
+        logs: data.sort(
+          (a, b) =>
+            new Date(b.createdAt || "").getTime() -
+            new Date(a.createdAt || "").getTime()
+        ),
+      });
+    } catch (error) {
+      console.error("Failed to fetch logs:", error);
+    }
   },
 
   // ADD log
   addLog: async (log) => {
-    await fetch("http://localhost:5000/logs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(log),
-    });
+    try {
+      await fetch("http://localhost:5000/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(log),
+      });
 
-    const res = await fetch("http://localhost:5000/logs");
-    const data: Log[] = await res.json();
+      // Re-fetch after adding
+      const res = await fetch("http://localhost:5000/logs");
+      const data: Log[] = await res.json();
 
-    set({
-      logs: data.sort(
-        (a, b) =>
-          new Date(b.createdAt || "").getTime() -
-          new Date(a.createdAt || "").getTime()
-      ),
-    });
+      set({
+        logs: data.sort(
+          (a, b) =>
+            new Date(b.createdAt || "").getTime() -
+            new Date(a.createdAt || "").getTime()
+        ),
+      });
+    } catch (error) {
+      console.error("Failed to add log:", error);
+    }
   },
 
   // CLEAR logs
   clearLogs: async () => {
-    await fetch("http://localhost:5000/logs", { method: "DELETE" });
-    set({ logs: [] });
+    try {
+      await fetch("http://localhost:5000/logs", {
+        method: "DELETE",
+      });
+      set({ logs: [] });
+    } catch (error) {
+      console.error("Failed to clear logs:", error);
+    }
   },
 }));

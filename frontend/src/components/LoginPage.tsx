@@ -4,7 +4,6 @@ import { GraduationCap } from "lucide-react";
 import { Input } from "./ui/Input";
 import { Button } from "./ui/Button";
 import { useAuthStore } from "../store/authStore";
-import { useLogStore } from "../store/logStore";
 
 const ADMIN_USERS = [
   {
@@ -25,43 +24,45 @@ const ADMIN_USERS = [
 
 export function LoginPage() {
   const navigate = useNavigate();
-
   const { setUser } = useAuthStore();
-  const { addLog } = useLogStore();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const adminUser = ADMIN_USERS.find(
-      (admin) => admin.email === email && admin.password === password
-    );
+  const adminUser = ADMIN_USERS.find(
+    (admin) => admin.email === email && admin.password === password
+  );
 
-    if (!adminUser) {
-      setError("Invalid email or password");
-      return;
-    }
+  if (!adminUser) {
+    setError("Invalid email or password");
+    return;
+  }
 
-    // remove password before storing
-    const { password: _, ...userWithoutPassword } = adminUser;
+  const { password: _, ...userWithoutPassword } = adminUser;
 
-    // ✅ set auth state
-    setUser(userWithoutPassword);
+  setUser(userWithoutPassword);
 
-    // ✅ LOG LOGIN (THIS WAS MISSING)
-    await addLog({
+  await fetch("http://localhost:5000/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       adminName: adminUser.name,
       adminEmail: adminUser.email,
-      action: "LOGIN",
-      details: "Admin logged in",
-    });
+    }),
+  });
 
-    setError("");
-    navigate("/dashboard");
-  };
+  // ✅ Redirect based on role
+  if (adminUser.role === "ADMIN") {
+    navigate("/admin");
+  } else {
+    navigate("/user");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

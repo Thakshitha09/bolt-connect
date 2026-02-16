@@ -11,8 +11,8 @@ export function SearchPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [searchResult, setSearchResult] = useState<Student | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  /* ================= EXPIRY TEXT ================= */
   const getExpiryText = (inactiveOn?: string) => {
     if (!inactiveOn) return null;
 
@@ -27,7 +27,6 @@ export function SearchPage() {
     return `Expires in ${diffDays} day(s)`;
   };
 
-  /* ================= SEARCH ================= */
   const handleSearch = async () => {
     if (phoneNumber.length !== 12) {
       setError("Please enter a valid 12-digit phone number");
@@ -36,6 +35,9 @@ export function SearchPage() {
     }
 
     try {
+      setLoading(true);
+      setError("");
+
       const res = await fetch(
         `http://localhost:5000/students/phone/${phoneNumber}`
       );
@@ -43,55 +45,41 @@ export function SearchPage() {
       if (!res.ok) {
         setError("No student found with this phone number");
         setSearchResult(null);
+        setLoading(false);
         return;
       }
 
-      const data = await res.json();
-
-      const today = new Date();
-      const inactiveDate = data.inactiveOn
-        ? new Date(data.inactiveOn)
-        : null;
-
-      if (
-        inactiveDate &&
-        today >= inactiveDate &&
-        data.activityStatus === "ACTIVE"
-      ) {
-        setSearchResult({
-          ...data,
-          activityStatus: "INACTIVE",
-          inactivityReason:
-            "Automatically marked inactive due to reaching scheduled end date",
-        });
-      } else {
-        setSearchResult(data);
-      }
-
+      const data: Student = await res.json();
+      setSearchResult(data);
       setError("");
     } catch (err) {
       console.error(err);
-      setError("Server error");
+      setError("Server error. Please try again.");
       setSearchResult(null);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#333547] relative">
-      {/* LOGIN ICON */}
-      <button
-        onClick={() => navigate("/login")}
-        className="absolute top-6 left-6 hover:opacity-90"
-      >
-        <img src="/favicon.svg" alt="JALA Connect" className="h-9 w-9" />
-      </button>
+      <div className="absolute top-6 left-6"></div>
 
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex flex-col items-center py-16">
-          <img src="/logo.png" alt="JALA Connect Logo" className="h-20 mb-3" />
-          <p className="mt-2 text-lg text-gray-300">
-            Mentorship and Learning, Redefined
-          </p>
+          <div
+            className="cursor-pointer select-none"
+            onClick={() => navigate("/login")}
+          >
+            <img
+              src="/logo.png"
+              alt="JALA Connect Logo"
+              className="h-20 mb-3 mx-auto"
+            />
+            <p className="mt-2 text-lg text-gray-300 text-center">
+              Mentorship and Learning, Redefined
+            </p>
+          </div>
 
           <div className="mt-8 w-full max-w-md">
             <div className="flex gap-2">
@@ -113,15 +101,19 @@ export function SearchPage() {
               </Button>
             </div>
 
-            {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+            {loading && (
+              <p className="mt-2 text-sm text-gray-300">Searching...</p>
+            )}
+
+            {error && (
+              <p className="mt-2 text-sm text-red-400">{error}</p>
+            )}
           </div>
         </div>
 
-        {/* ================= RESULT CARD ================= */}
         {searchResult && (
           <div className="mt-8 bg-[#15172b] ring-1 ring-white/10 sm:rounded-xl p-6 max-w-2xl mx-auto">
             <dl className="divide-y divide-white/10">
-              {/* NAME */}
               <div className="px-4 py-3 grid grid-cols-3 gap-4">
                 <dt className="text-sm text-gray-300">Name</dt>
                 <dd className="text-sm text-white col-span-2">
@@ -129,7 +121,6 @@ export function SearchPage() {
                 </dd>
               </div>
 
-              {/* PHONE */}
               <div className="px-4 py-3 grid grid-cols-3 gap-4">
                 <dt className="text-sm text-gray-300">Phone</dt>
                 <dd className="text-sm text-white col-span-2">
@@ -137,7 +128,6 @@ export function SearchPage() {
                 </dd>
               </div>
 
-              {/* STATUS */}
               <div className="px-4 py-3 grid grid-cols-3 gap-4">
                 <dt className="text-sm text-gray-300">Status</dt>
                 <dd className="col-span-2">
@@ -153,7 +143,6 @@ export function SearchPage() {
                 </dd>
               </div>
 
-              {/* EXPIRES ON */}
               {searchResult.inactiveOn && (
                 <div className="px-4 py-3 grid grid-cols-3 gap-4">
                   <dt className="text-sm text-gray-300">Expires On</dt>
@@ -161,16 +150,7 @@ export function SearchPage() {
                     {new Date(
                       searchResult.inactiveOn
                     ).toLocaleDateString()}
-
-                    <div
-                      className={`mt-1 text-sm font-semibold ${
-                        getExpiryText(searchResult.inactiveOn)?.startsWith(
-                          "Expired"
-                        )
-                          ? "text-red-400"
-                          : "text-yellow-400"
-                      }`}
-                    >
+                    <div className="mt-1 text-sm font-semibold text-yellow-400">
                       ⏳ {getExpiryText(searchResult.inactiveOn)}
                     </div>
                   </dd>
