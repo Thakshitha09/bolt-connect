@@ -28,7 +28,7 @@ export const useLogStore = create<LogStore>((set) => ({
   // FETCH logs
   fetchLogs: async () => {
     try {
-      const res = await fetch("http://localhost:5000/logs");
+      const res = await fetch("/api/logs");
       const data: Log[] = await res.json();
 
       set({
@@ -46,14 +46,14 @@ export const useLogStore = create<LogStore>((set) => ({
   // ADD log
   addLog: async (log) => {
     try {
-      await fetch("http://localhost:5000/logs", {
+      await fetch("/api/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(log),
       });
 
       // Re-fetch after adding
-      const res = await fetch("http://localhost:5000/logs");
+      const res = await fetch("/api/logs");
       const data: Log[] = await res.json();
 
       set({
@@ -71,7 +71,7 @@ export const useLogStore = create<LogStore>((set) => ({
   // CLEAR logs
   clearLogs: async () => {
     try {
-      await fetch("http://localhost:5000/logs", {
+      await fetch("/api/logs", {
         method: "DELETE",
       });
       set({ logs: [] });

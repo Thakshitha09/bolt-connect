@@ -46,7 +46,7 @@ export function LoginPage() {
 
   setUser(userWithoutPassword);
 
-  await fetch("http://localhost:5000/login", {
+  await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

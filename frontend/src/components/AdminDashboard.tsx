@@ -37,7 +37,7 @@ export default function AdminDashboard() {
   /* ================= FETCH STUDENTS ================= */
 /* ================= FETCH STUDENTS ================= */
 const fetchStudents = async () => {
-  const res = await fetch("http://localhost:5000/students");
+  const res = await fetch("/api/students");
   const data = await res.json();
 
   const today = new Date();
@@ -48,7 +48,7 @@ const fetchStudents = async () => {
       new Date(student.inactiveOn) < today &&
       student.activityStatus.toUpperCase() === "ACTIVE"
     ) {
-      await fetch(`http://localhost:5000/students/${student.id}`, {
+      await fetch(`/api/students/${student.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,7 +59,7 @@ const fetchStudents = async () => {
     }
   }
 
-  const updatedRes = await fetch("http://localhost:5000/students");
+  const updatedRes = await fetch("/api/students");
   const updatedData = await updatedRes.json();
 
   setStudents(updatedData);
@@ -103,7 +103,7 @@ useEffect(() => {
   /* ================= LOGOUT ================= */
   const handleLogout = async () => {
   try {
-    await fetch("http://localhost:5000/logout", {
+    await fetch("/api/logout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,7 +130,7 @@ const handleAddStudent = async (data: Omit<Student, "id">) => {
       data.activityStatus === "INACTIVE" ? "INACTIVE" : "ACTIVE",
   };
 
-  await fetch("http://localhost:5000/students", {
+  await fetch("/api/students", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(formattedData),
@@ -143,7 +143,7 @@ const handleAddStudent = async (data: Omit<Student, "id">) => {
 
   /* ================= EDIT ================= */
   const handleEditStudent = async (updatedStudent: Student) => {
-    await fetch(`http://localhost:5000/students/${updatedStudent.id}`, {
+    await fetch(`/api/students/${updatedStudent.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedStudent),
