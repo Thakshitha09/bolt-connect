@@ -2,6 +2,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Student } from "../types";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface EditStudentFormProps {
   student: Student;
@@ -16,13 +18,37 @@ export function EditStudentForm({
   onCancel,
   existingPhoneNumbers,
 }: EditStudentFormProps) {
+
+  /* ===== CONVERT YYYY-MM-DD → YYYY-MM-DD (SAFE FOR INPUT) ===== */
+  const formatForInput = (date?: string) => {
+    if (!date) return "";
+    const parts = date.split("-");
+    if (parts.length === 3 && parts[0].length === 2) {
+      // If stored as DD-MM-YYYY convert back
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return date;
+  };
+
+  /* ===== CONVERT TO DD-MM-YYYY BEFORE SUBMIT ===== */
+  const formatToDDMMYYYY = (date?: string) => {
+    if (!date) return undefined;
+    const parts = date.split("-");
+    if (parts.length !== 3) return undefined;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     control,
   } = useForm<Student>({
-    defaultValues: student,
+    defaultValues: {
+      ...student,
+      dateOfJoining: formatForInput(student.dateOfJoining),
+      inactiveOn: formatForInput(student.inactiveOn),
+    },
   });
 
   const status = useWatch({
@@ -41,7 +67,11 @@ export function EditStudentForm({
   };
 
   const onFormSubmit = (data: Student) => {
-    // Clear inactive fields when reactivating
+
+    // Convert date before sending to backend
+    data.dateOfJoining = formatToDDMMYYYY(data.dateOfJoining);
+    data.inactiveOn = formatToDDMMYYYY(data.inactiveOn);
+
     if (
       data.activityStatus === "ACTIVE" &&
       student.activityStatus === "INACTIVE"
@@ -56,7 +86,7 @@ export function EditStudentForm({
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* NAME */}
+
         <div>
           <label className="block text-sm font-medium text-gray-700">Name</label>
           <Input
@@ -66,7 +96,6 @@ export function EditStudentForm({
           />
         </div>
 
-        {/* PHONE */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Phone Number
@@ -81,7 +110,6 @@ export function EditStudentForm({
           />
         </div>
 
-        {/* TYPE */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Type</label>
           <select
@@ -96,7 +124,6 @@ export function EditStudentForm({
           </select>
         </div>
 
-        {/* EMAIL */}
         <div>
           <label className="block text-sm font-medium text-gray-700">Email</label>
           <Input
@@ -107,7 +134,6 @@ export function EditStudentForm({
           />
         </div>
 
-        {/* AMOUNTS */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Amount Paid
@@ -136,7 +162,7 @@ export function EditStudentForm({
           <Input type="number" {...register("incentivesPaid", { min: 0 })} />
         </div>
 
-        {/* DATES */}
+        {/* DATE FIELDS */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Date of Joining
@@ -151,7 +177,6 @@ export function EditStudentForm({
           <Input type="date" {...register("inactiveOn")} />
         </div>
 
-        {/* STATUS */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Status
@@ -165,7 +190,6 @@ export function EditStudentForm({
           </select>
         </div>
 
-        {/* INACTIVITY REASON */}
         {status === "INACTIVE" && (
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -186,7 +210,6 @@ export function EditStudentForm({
           </div>
         )}
 
-        {/* LOCATION */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
             Country
@@ -220,7 +243,6 @@ export function EditStudentForm({
         </div>
       </div>
 
-      {/* ACTION BUTTONS */}
       <div className="mt-6 flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

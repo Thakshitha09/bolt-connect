@@ -9,6 +9,20 @@ interface ViewStudentModalProps {
 
 function ViewStudentModal({ student, isOpen, onClose }: ViewStudentModalProps) {
 
+  /* ================= FORMAT TO DD-MM-YYYY ================= */
+  const formatToDDMMYYYY = (date?: string) => {
+    if (!date) return '';
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+
+    return `${day}-${month}-${year}`;
+  };
+
   const calculateExpiresIn = (inactiveOn?: string) => {
     if (!inactiveOn) return null;
 
@@ -57,14 +71,14 @@ function ViewStudentModal({ student, isOpen, onClose }: ViewStudentModalProps) {
 
         <p>
           <strong>Date of Joining:</strong>{' '}
-          {new Date(student.dateOfJoining).toLocaleDateString()}
+          {formatToDDMMYYYY(student.dateOfJoining)}
         </p>
 
         {student.inactiveOn && (
           <>
             <p>
               <strong>Expires On:</strong>{' '}
-              {new Date(student.inactiveOn).toLocaleDateString()}
+              {formatToDDMMYYYY(student.inactiveOn)}
             </p>
 
             <p>
@@ -80,7 +94,7 @@ function ViewStudentModal({ student, isOpen, onClose }: ViewStudentModalProps) {
                     : 'text-yellow-600'
                 }`}
               >
-                 {expiryStatus.message}
+                {expiryStatus.message}
               </p>
             )}
           </>

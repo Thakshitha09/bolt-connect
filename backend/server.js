@@ -4,15 +4,30 @@ const cors = require("cors");
 const db = require("./db");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
 
 app.use(cors());
 app.use(express.json());
 
-/* ================= DATE FORMAT HELPER ================= */
+/* ================= DATE FORMAT HELPER (SAFE VERSION) ================= */
 const formatDate = (date) => {
   if (!date) return null;
-  return new Date(date).toISOString().split("T")[0];
+
+  // If already in DD-MM-YYYY format → convert to YYYY-MM-DD
+  if (typeof date === "string" && date.includes("-")) {
+    const parts = date.split("-");
+    if (parts.length === 3 && parts[0].length === 2) {
+      // DD-MM-YYYY → YYYY-MM-DD
+      return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+  }
+
+  const d = new Date(date);
+
+  if (isNaN(d.getTime())) return null;
+
+  return d.toISOString().split("T")[0];
 };
 
 /* ================= TEST ROUTE ================= */
@@ -110,7 +125,6 @@ app.post("/students", (req, res) => {
 
     const newStudentId = result.insertId;
 
-    /* ===== LOG ADD ===== */
     db.query(
       `INSERT INTO logs 
        (adminName, adminEmail, action, studentName, studentId, details)
@@ -160,7 +174,6 @@ app.post("/login", (req, res) => {
   );
 });
 
-
 /* ================= LOGOUT ================= */
 app.post("/logout", (req, res) => {
   const { adminName, adminEmail } = req.body;
@@ -185,7 +198,6 @@ app.post("/logout", (req, res) => {
     }
   );
 });
-
 
 /* ================= UPDATE STUDENT ================= */
 app.put("/students/:id", (req, res) => {
@@ -226,7 +238,6 @@ app.put("/students/:id", (req, res) => {
       return res.status(500).json({ error: "Failed to update student" });
     }
 
-    /* ===== LOG EDIT ===== */
     db.query(
       `INSERT INTO logs 
        (adminName, adminEmail, action, studentName, studentId, details)
@@ -264,7 +275,6 @@ app.delete("/students/:id", (req, res) => {
         return res.status(500).json({ error: "Delete failed" });
       }
 
-      /* ===== LOG DELETE ===== */
       db.query(
         `INSERT INTO logs 
          (adminName, adminEmail, action, studentName, studentId, details)

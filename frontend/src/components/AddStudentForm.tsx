@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Student } from "../types";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface AddStudentFormProps {
   onSubmit: (data: Omit<Student, "id">) => void;
@@ -27,8 +29,8 @@ export function AddStudentForm({
     dueAmount: "",
     discount: "",
     incentivesPaid: "",
-    dateOfJoining: "",
-    inactiveOn: "",
+    dateOfJoining: null as Date | null,
+    inactiveOn: null as Date | null,
     activityStatus: "ACTIVE",
     inactivityReason: "",
     country: "",
@@ -37,8 +39,15 @@ export function AddStudentForm({
     governmentIdProof: "",
   });
 
+  /* ================= FORMAT DATE TO DD-MM-YYYY ================= */
+  const formatToDDMMYYYY = (date: string) => {
+    if (!date) return "";
+    const [year, month, day] = date.split("-");
+    return `${day}-${month}-${year}`;
+  };
+
   /* ================= HANDLE CHANGE ================= */
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | Date | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -58,10 +67,6 @@ export function AddStudentForm({
     if (!formData.address.trim()) return setError("Address is required");
     if (!formData.governmentIdProof.trim())
       return setError("Government ID Proof is required");
-    if (formData.phoneNumber.length !== 12) {
-  return setError("Phone number must be exactly 12 digits");
-}
-
 
     /* ===== PHONE VALIDATION ===== */
     if (!/^\d{12}$/.test(formData.phoneNumber)) {
@@ -107,21 +112,28 @@ export function AddStudentForm({
 
     /* ===== FINAL PAYLOAD ===== */
     const payload: Omit<Student, "id"> = {
-      ...formData,
-      amountPaid,
-      dueAmount,
-      discount,
-      incentivesPaid,
-      inactiveOn:
-        formData.activityStatus === "ACTIVE" ? "" : formData.inactiveOn,
-      inactivityReason:
-        formData.activityStatus === "ACTIVE"
-          ? ""
-          : formData.inactivityReason,
-    };
+  ...formData,
+  amountPaid,
+  dueAmount,
+  discount,
+  incentivesPaid,
+  dateOfJoining: formData.dateOfJoining
+    ? formatToDDMMYYYY(formData.dateOfJoining.toISOString().split("T")[0])
+    : "",
+  inactiveOn:
+    formData.activityStatus === "ACTIVE" || !formData.inactiveOn
+      ? ""
+      : formatToDDMMYYYY(formData.inactiveOn.toISOString().split("T")[0]),
+  inactivityReason:
+    formData.activityStatus === "ACTIVE"
+      ? ""
+      : formData.inactivityReason,
+};
 
-    onSubmit(payload);
-  };
+onSubmit(payload);
+};
+
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,32 +147,18 @@ export function AddStudentForm({
           onChange={(e) => handleChange("name", e.target.value)}
         />
 
-        {/* 🔥 PHONE FIELD (STRICT 12 DIGITS) */}
+        {/* PHONE FIELD */}
         <Input
-  placeholder="Phone (12 digits)"
-  value={formData.phoneNumber}
-  maxLength={12}
-  onChange={(e) => {
-    const value = e.target.value;
-
-    // Allow only digits
-    if (!/^\d*$/.test(value)) return;
-
-    // Prevent typing more than 12
-    if (value.length > 12) return;
-
-    handleChange("phoneNumber", value);
-  }}
-  onPaste={(e) => {
-    const pasted = e.clipboardData.getData("Text");
-
-    // Prevent paste if not exactly digits or > 12
-    if (!/^\d{1,12}$/.test(pasted)) {
-      e.preventDefault();
-    }
-  }}
-/>
-
+          placeholder="Phone (12 digits)"
+          value={formData.phoneNumber}
+          maxLength={12}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (!/^\d*$/.test(value)) return;
+            if (value.length > 12) return;
+            handleChange("phoneNumber", value);
+          }}
+        />
 
         <Input
           placeholder="Email"
@@ -176,7 +174,11 @@ export function AddStudentForm({
           <option value="">Select Type</option>
           <option value="STUDENT">STUDENT</option>
           <option value="EMPLOYEE">EMPLOYEE</option>
-          <option value="MENTOR">TRAINER / MENTOR</option>
+          <option value="MENTOR"> MENTOR</option>
+          <option value="LEARNER">LEARNER</option>
+          <option value="JOB_SEEKER">JOB SEEKER</option>
+          <option value="PAID_INTERN">PAID INTERN</option>
+          <option value="UNPAID_INTERN">UNPAID INTERN</option>
         </select>
 
         <Input type="number" placeholder="Amount Paid"
@@ -199,22 +201,38 @@ export function AddStudentForm({
           onChange={(e) => handleChange("incentivesPaid", e.target.value)}
         />
 
-        <Input type="date"
-          value={formData.dateOfJoining}
-          onChange={(e) => handleChange("dateOfJoining", e.target.value)}
-        />
+        <div>
+  <DatePicker
+    selected={formData.dateOfJoining}
+    onChange={(date: Date | null) =>
+      handleChange("dateOfJoining", date)
+    }
+    dateFormat="dd-MM-yyyy"
+    placeholderText="dd-mm-yyyy"
+    className="w-full border rounded px-3 py-2 text-sm"
+  />
+</div>
 
-        <Input type="date"
-          value={formData.inactiveOn}
-          onChange={(e) => handleChange("inactiveOn", e.target.value)}
-        />
+        <div>
+  <DatePicker
+    selected={formData.inactiveOn}
+    onChange={(date: Date | null) =>
+      handleChange("inactiveOn", date)
+    }
+    dateFormat="dd-MM-yyyy"
+    placeholderText="dd-mm-yyyy"
+    className="w-full border rounded px-3 py-2 text-sm"
+  />
+</div>
 
-        <Input placeholder="Country"
+        <Input
+          placeholder="Country"
           value={formData.country}
           onChange={(e) => handleChange("country", e.target.value)}
         />
 
-        <Input placeholder="State"
+        <Input
+          placeholder="State"
           value={formData.state}
           onChange={(e) => handleChange("state", e.target.value)}
         />
@@ -232,7 +250,6 @@ export function AddStudentForm({
           value={formData.governmentIdProof}
           onChange={(e) => handleChange("governmentIdProof", e.target.value)}
         />
-
 
         <div className="col-span-2">
           <label className="text-sm font-medium">Activity Status</label>

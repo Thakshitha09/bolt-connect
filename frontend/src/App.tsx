@@ -4,6 +4,7 @@ import { SearchPage } from './components/SearchPage';
 import { LoginPage } from './components/LoginPage';
 import  LogsPage  from './components/LogsPage'; // 👈 ADD THIS
 import { useAuthStore } from './store/authStore';
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function App() {
   const { user } = useAuthStore();
