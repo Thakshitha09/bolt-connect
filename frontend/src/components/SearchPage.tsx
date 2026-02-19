@@ -39,7 +39,7 @@ export function SearchPage() {
       setError("");
 
       const res = await fetch(
-        `http://localhost:5000/students/phone/${phoneNumber}`
+        `/api/students/phone/${phoneNumber}`
       );
 
       if (!res.ok) {

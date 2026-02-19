@@ -18,14 +18,12 @@ import ViewStudentModal from "./ViewStudentModal";
 import { Student } from "../types";
 import { useAuthStore } from "../store/authStore";
 import { useStudentStore } from "../store/studentStore";
-import { useLogStore } from "../store/logStore";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const { user, setUser } = useAuthStore();
   const { students, setStudents } = useStudentStore();
-  const { addLog } = useLogStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -35,57 +33,31 @@ export default function AdminDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   /* ================= FETCH STUDENTS ================= */
-/* ================= FETCH STUDENTS ================= */
-const fetchStudents = async () => {
+  const fetchStudents = async () => {
   const res = await fetch("/api/students");
   const data = await res.json();
-
-  const today = new Date();
-
-  for (const student of data) {
-    if (
-      student.inactiveOn &&
-      new Date(student.inactiveOn) < today &&
-      student.activityStatus.toUpperCase() === "ACTIVE"
-    ) {
-      await fetch(`/api/students/${student.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...student,
-          activityStatus: "INACTIVE",
-        }),
-      });
-    }
-  }
-
-  const updatedRes = await fetch("/api/students");
-  const updatedData = await updatedRes.json();
-
-  setStudents(updatedData);
+  console.log("Fetched students:", data);   // 👈 ADD THIS
+  setStudents(data);
 };
 
-/* ✅ CALL IT HERE */
-useEffect(() => {
-  fetchStudents();
-}, []);
-
-
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   /* ================= FILTER + SEARCH ================= */
   const filteredStudents = useMemo(() => {
   let result = students;
 
-  // Filter by status
+  console.log("Current Filter Status:", filterStatus);
+  console.log("All Students:", students);
+
   if (filterStatus !== "ALL") {
-    result = result.filter(
-      (s) =>
-        s.activityStatus &&
-        s.activityStatus.trim().toUpperCase() === filterStatus
-    );
+    result = result.filter((s) => {
+      console.log("Checking:", s.name, s.activityStatus);
+      return s.activityStatus?.toUpperCase() === filterStatus;
+    });
   }
 
-  // Search filter
   result = result.filter(
     (s) =>
       s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,53 +65,40 @@ useEffect(() => {
       s.phoneNumber.includes(searchQuery)
   );
 
-  // 🔥 SORT BY NAME (A-Z)
-  return result.sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  return result.sort((a, b) => a.name.localeCompare(b.name));
 }, [students, searchQuery, filterStatus]);
 
 
   /* ================= LOGOUT ================= */
   const handleLogout = async () => {
-  try {
-    await fetch("/api/logout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        adminName: user?.name,
-        adminEmail: user?.email,
-      }),
-    });
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          adminName: user?.name,
+          adminEmail: user?.email,
+        }),
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
 
-  setUser(null);
-  navigate("/login");
-};
-
-
-  /* ================= ADD ================= */
-const handleAddStudent = async (data: Omit<Student, "id">) => {
-  const formattedData = {
-    ...data,
-    activityStatus:
-      data.activityStatus === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+    setUser(null);
+    navigate("/login");
   };
 
-  await fetch("/api/students", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formattedData),
-  });
+  /* ================= ADD ================= */
+  const handleAddStudent = async (data: Omit<Student, "id">) => {
+    await fetch("/api/students", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-  setIsAddModalOpen(false);
-  await fetchStudents();
-};
-
+    setIsAddModalOpen(false);
+    await fetchStudents();
+  };
 
   /* ================= EDIT ================= */
   const handleEditStudent = async (updatedStudent: Student) => {
@@ -190,9 +149,36 @@ const handleAddStudent = async (data: Omit<Student, "id">) => {
           />
 
           <div className="flex gap-2">
-            <Button onClick={() => setFilterStatus("ALL")}>All</Button>
-            <Button onClick={() => setFilterStatus("ACTIVE")}>Active</Button>
-            <Button onClick={() => setFilterStatus("INACTIVE")}>
+            <Button
+              onClick={() => setFilterStatus("ALL")}
+              className={
+                filterStatus === "ALL"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 text-black"
+              }
+            >
+              All
+            </Button>
+
+            <Button
+              onClick={() => setFilterStatus("ACTIVE")}
+              className={
+                filterStatus === "ACTIVE"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-200 text-black"
+              }
+            >
+              Active
+            </Button>
+
+            <Button
+              onClick={() => setFilterStatus("INACTIVE")}
+              className={
+                filterStatus === "INACTIVE"
+                  ? "bg-red-600 text-white"
+                  : "bg-gray-200 text-black"
+              }
+            >
               Inactive
             </Button>
 
@@ -220,7 +206,17 @@ const handleAddStudent = async (data: Omit<Student, "id">) => {
                 <td className="p-3">{s.name}</td>
                 <td className="p-3">{s.phoneNumber}</td>
                 <td className="p-3">{s.type}</td>
-                <td className="p-3">{s.activityStatus}</td>
+
+                <td
+  className={`p-3 font-semibold ${
+    s.activityStatus?.toUpperCase() === "INACTIVE"
+      ? "text-red-600"
+      : "text-green-600"
+  }`}
+>
+  {s.activityStatus}
+</td>
+
 
                 <td className="p-3 flex gap-2">
                   <Button

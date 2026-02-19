@@ -110,27 +110,25 @@ export function AddStudentForm({
       return setError("Inactivity reason is required");
     }
 
-    /* ===== FINAL PAYLOAD ===== */
-    const payload: Omit<Student, "id"> = {
-  ...formData,
-  amountPaid,
-  dueAmount,
-  discount,
-  incentivesPaid,
-  dateOfJoining: formData.dateOfJoining
-    ? formatToDDMMYYYY(formData.dateOfJoining.toISOString().split("T")[0])
-    : "",
-  inactiveOn:
-    formData.activityStatus === "ACTIVE" || !formData.inactiveOn
-      ? ""
-      : formatToDDMMYYYY(formData.inactiveOn.toISOString().split("T")[0]),
-  inactivityReason:
-    formData.activityStatus === "ACTIVE"
-      ? ""
-      : formData.inactivityReason,
-};
+  /* ===== FINAL PAYLOAD ===== */
+  const payload: Omit<Student, "id"> = {
+    ...formData,
+    amountPaid,
+    dueAmount,
+    discount,
+    incentivesPaid,
+    dateOfJoining: formData.dateOfJoining
+      ? formatToDDMMYYYY(formData.dateOfJoining.toISOString().split("T")[0])
+      : "",
+    inactiveOn: formData.inactiveOn
+      ? formatToDDMMYYYY(
+          formData.inactiveOn.toISOString().split("T")[0]
+        )
+      : "",
+    inactivityReason: formData.inactivityReason || "",
+  };
 
-onSubmit(payload);
+  onSubmit(payload);
 };
 
 

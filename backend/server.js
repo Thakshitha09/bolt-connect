@@ -6,56 +6,25 @@ const db = require("./db");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
 app.use(cors());
 app.use(express.json());
 
-/* ================= DATE FORMAT HELPER (SAFE VERSION) ================= */
+/* ================= DATE FORMAT HELPER ================= */
 const formatDate = (date) => {
   if (!date) return null;
 
-  // If already in DD-MM-YYYY format → convert to YYYY-MM-DD
   if (typeof date === "string" && date.includes("-")) {
     const parts = date.split("-");
     if (parts.length === 3 && parts[0].length === 2) {
-      // DD-MM-YYYY → YYYY-MM-DD
       return `${parts[2]}-${parts[1]}-${parts[0]}`;
     }
   }
 
   const d = new Date(date);
-
   if (isNaN(d.getTime())) return null;
 
   return d.toISOString().split("T")[0];
 };
-
-/* ================= TEST ROUTE ================= */
-app.get("/", (req, res) => {
-  res.send("Backend is running successfully 🚀");
-});
-
-/* ================= SEARCH BY PHONE NUMBER ================= */
-app.get("/students/phone/:phoneNumber", (req, res) => {
-  const { phoneNumber } = req.params;
-
-  db.query(
-    "SELECT * FROM students WHERE phoneNumber = ?",
-    [phoneNumber],
-    (err, results) => {
-      if (err) {
-        console.error("PHONE SEARCH ERROR:", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({ message: "Student not found" });
-      }
-
-      res.json(results[0]);
-    }
-  );
-});
 
 /* ================= GET ALL STUDENTS ================= */
 app.get("/students", (req, res) => {
@@ -70,24 +39,10 @@ app.get("/students", (req, res) => {
 
 /* ================= ADD STUDENT ================= */
 app.post("/students", (req, res) => {
-  const {
-    name,
-    phoneNumber,
-    type,
-    email,
-    amountPaid,
-    dueAmount,
-    discount,
-    incentivesPaid,
-    dateOfJoining,
-    inactiveOn,
-    activityStatus,
-    inactivityReason,
-    country,
-    state,
-    address,
-    governmentIdProof,
-  } = req.body;
+  const formattedInactiveDate = formatDate(req.body.inactiveOn);
+
+  // 🔥 AUTOMATIC STATUS LOGIC
+  const finalStatus = formattedInactiveDate ? "INACTIVE" : "ACTIVE";
 
   const sql = `
     INSERT INTO students (
@@ -99,22 +54,22 @@ app.post("/students", (req, res) => {
   `;
 
   const values = [
-    name,
-    phoneNumber,
-    type,
-    email,
-    amountPaid,
-    dueAmount,
-    discount,
-    incentivesPaid,
-    formatDate(dateOfJoining),
-    formatDate(inactiveOn),
-    activityStatus === "INACTIVE" ? "INACTIVE" : "ACTIVE",
-    inactivityReason,
-    country,
-    state,
-    address,
-    governmentIdProof,
+    req.body.name,
+    req.body.phoneNumber,
+    req.body.type,
+    req.body.email,
+    req.body.amountPaid,
+    req.body.dueAmount,
+    req.body.discount,
+    req.body.incentivesPaid,
+    formatDate(req.body.dateOfJoining),
+    formattedInactiveDate,
+    finalStatus,
+    finalStatus === "INACTIVE" ? req.body.inactivityReason : "",
+    req.body.country,
+    req.body.state,
+    req.body.address,
+    req.body.governmentIdProof,
   ];
 
   db.query(sql, values, (err, result) => {
@@ -123,85 +78,21 @@ app.post("/students", (req, res) => {
       return res.status(500).json({ error: "Failed to add student" });
     }
 
-    const newStudentId = result.insertId;
-
-    db.query(
-      `INSERT INTO logs 
-       (adminName, adminEmail, action, studentName, studentId, details)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        "Admin",
-        "admin@example.com",
-        "ADD",
-        name,
-        newStudentId,
-        `Added student ${name}`,
-      ],
-      (logErr) => {
-        if (logErr) console.error("LOG INSERT ERROR:", logErr);
-      }
-    );
-
     res.json({
       message: "Student added successfully ✅",
-      id: newStudentId,
+      id: result.insertId,
     });
   });
-});
-
-/* ================= LOGIN ================= */
-app.post("/login", (req, res) => {
-  const { adminName, adminEmail } = req.body;
-
-  db.query(
-    `INSERT INTO logs 
-     (adminName, adminEmail, action, details)
-     VALUES (?, ?, ?, ?)`,
-    [
-      adminName || "Admin",
-      adminEmail || "admin@example.com",
-      "LOGIN",
-      "Admin logged in",
-    ],
-    (err) => {
-      if (err) {
-        console.error("LOGIN LOG ERROR:", err);
-        return res.status(500).json({ error: "Login log failed" });
-      }
-
-      res.json({ message: "Login successful" });
-    }
-  );
-});
-
-/* ================= LOGOUT ================= */
-app.post("/logout", (req, res) => {
-  const { adminName, adminEmail } = req.body;
-
-  db.query(
-    `INSERT INTO logs 
-     (adminName, adminEmail, action, details)
-     VALUES (?, ?, ?, ?)`,
-    [
-      adminName || "Admin",
-      adminEmail || "admin@example.com",
-      "LOGOUT",
-      "Admin logged out",
-    ],
-    (err) => {
-      if (err) {
-        console.error("LOGOUT LOG ERROR:", err);
-        return res.status(500).json({ error: "Logout log failed" });
-      }
-
-      res.json({ message: "Logout logged successfully" });
-    }
-  );
 });
 
 /* ================= UPDATE STUDENT ================= */
 app.put("/students/:id", (req, res) => {
   const { id } = req.params;
+
+  const formattedInactiveDate = formatDate(req.body.inactiveOn);
+
+  // 🔥 AUTOMATIC STATUS LOGIC
+  const finalStatus = formattedInactiveDate ? "INACTIVE" : "ACTIVE";
 
   const sql = `
     UPDATE students SET
@@ -222,9 +113,9 @@ app.put("/students/:id", (req, res) => {
     req.body.discount,
     req.body.incentivesPaid,
     formatDate(req.body.dateOfJoining),
-    formatDate(req.body.inactiveOn),
-    req.body.activityStatus,
-    req.body.inactivityReason,
+    formattedInactiveDate,
+    finalStatus,
+    finalStatus === "INACTIVE" ? req.body.inactivityReason : "",
     req.body.country,
     req.body.state,
     req.body.address,
@@ -238,73 +129,7 @@ app.put("/students/:id", (req, res) => {
       return res.status(500).json({ error: "Failed to update student" });
     }
 
-    db.query(
-      `INSERT INTO logs 
-       (adminName, adminEmail, action, studentName, studentId, details)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        "Admin",
-        "admin@example.com",
-        "EDIT",
-        req.body.name,
-        id,
-        `Edited student ${req.body.name}`,
-      ],
-      (logErr) => {
-        if (logErr) console.error("LOG INSERT ERROR:", logErr);
-      }
-    );
-
     res.json({ message: "Student updated successfully ✅" });
-  });
-});
-
-/* ================= DELETE STUDENT ================= */
-app.delete("/students/:id", (req, res) => {
-  const { id } = req.params;
-
-  db.query("SELECT name FROM students WHERE id = ?", [id], (err, result) => {
-    if (err || result.length === 0) {
-      return res.status(404).json({ error: "Student not found" });
-    }
-
-    const studentName = result[0].name;
-
-    db.query("DELETE FROM students WHERE id = ?", [id], (err) => {
-      if (err) {
-        return res.status(500).json({ error: "Delete failed" });
-      }
-
-      db.query(
-        `INSERT INTO logs 
-         (adminName, adminEmail, action, studentName, studentId, details)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          "Admin",
-          "admin@example.com",
-          "DELETE",
-          studentName,
-          id,
-          `Deleted student ${studentName}`,
-        ],
-        (logErr) => {
-          if (logErr) console.error("LOG INSERT ERROR:", logErr);
-        }
-      );
-
-      res.json({ message: "Student deleted successfully ✅" });
-    });
-  });
-});
-
-/* ================= GET LOGS ================= */
-app.get("/logs", (req, res) => {
-  db.query("SELECT * FROM logs ORDER BY timestamp DESC", (err, results) => {
-    if (err) {
-      console.error("LOG FETCH ERROR:", err);
-      return res.status(500).json({ error: "Failed to fetch logs" });
-    }
-    res.json(results);
   });
 });
 
